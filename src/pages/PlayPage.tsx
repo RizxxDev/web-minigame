@@ -5,9 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGameProgress } from '../hooks/useGameProgress';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Analytics } from "@vercel/analytics/next"
 
-<Analytics/>
 export default function PlayPage() {
   const { user } = useAuth();
   const { progress, saveProgress } = useGameProgress();
@@ -306,8 +304,9 @@ export default function PlayPage() {
         </div>
       </div>
     </div>
-</Analytics>
+
   );
 
 }
+
 
