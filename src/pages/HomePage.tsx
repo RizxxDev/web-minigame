@@ -105,14 +105,6 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">1M+</div>
-              <div className="text-gray-600 dark:text-gray-400">Total Clicks</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">500+</div>
-              <div className="text-gray-600 dark:text-gray-400">Active Players</div>
-            </div>
-            <div>
               <div className="text-4xl font-bold text-pink-600 dark:text-pink-400 mb-2">24/7</div>
               <div className="text-gray-600 dark:text-gray-400">Online Fun</div>
             </div>
@@ -121,4 +113,5 @@ export default function HomePage() {
       </div>
     </div>
   );
+
 }
