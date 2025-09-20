@@ -1,173 +1,80 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, type Profile } from '../lib/supabase';
-import { User } from '@supabase/supabase-js';
-import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
-interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (username: string, email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+type Theme = 'light' | 'dark';
+
+interface ThemeContextType {
+  theme: Theme;
+  toggleTheme: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<Theme>('light');
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
+    // Load theme from localStorage for non-authenticated users
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
+    // Load theme from database for authenticated users
+    if (user) {
+      loadUserTheme();
+    }
+  }, [user]);
 
-    return () => subscription.unsubscribe();
-  }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const loadUserTheme = async () => {
+    if (!user) return;
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
+    const { data } = await supabase
+      .from('user_settings')
+      .select('theme')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) {
+      setTheme(data.theme);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      throw error;
-    }
-
-    toast.success('Successfully signed in!');
-  };
-
-  const signUp = async (username: string, email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      throw error;
-    }
-
-    if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            username,
-            email,
-          },
-        ]);
-
-      if (profileError) {
-        toast.error('Error creating profile');
-        throw profileError;
-      }
-
-      // Create initial game progress
-      const { error: progressError } = await supabase
-        .from('game_progress')
-        .insert([
-          {
-            user_id: data.user.id,
-            score: 0,
-            clicks: 0,
-            click_power: 1,
-            auto_clickers: 0,
-            auto_click_power: 1,
-            coins: 0,
-          },
-        ]);
-
-      if (progressError) {
-        console.error('Error creating initial progress:', progressError);
-      }
-
-      // Create initial settings
-      const { error: settingsError } = await supabase
+  const toggleTheme = async () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    
+    // Save to localStorage
+    localStorage.setItem('theme', newTheme);
+    
+    // Save to database if user is authenticated
+    if (user) {
+      await supabase
         .from('user_settings')
-        .insert([
-          {
-            user_id: data.user.id,
-            theme: 'light',
-          },
-        ]);
-
-      if (settingsError) {
-        console.error('Error creating initial settings:', settingsError);
-      }
-
-      toast.success('Account created successfully!');
+        .upsert({
+          user_id: user.id,
+          theme: newTheme,
+        });
     }
   };
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error(error.message);
-      throw error;
-    }
-    toast.success('Signed out successfully!');
-  };
-
-  const value = {
-    user,
-    profile,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
+export function useTheme() {
+  const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 }
