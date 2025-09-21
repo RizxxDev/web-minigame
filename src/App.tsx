@@ -10,6 +10,9 @@ import LoginPage from './pages/LoginPage';
 import PlayPage from './pages/PlayPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import GachaPage from './pages/GachaPage';
+import InventoryPage from './pages/InventoryPage';
+import TradePage from './pages/TradePage';
 
 function App() {
   return (
@@ -25,6 +28,9 @@ function App() {
               <Route path="/play" element={<PlayPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/gacha" element={<GachaPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/trade" element={<TradePage />} />
             </Routes>
             <Toaster
               position="bottom-right"
