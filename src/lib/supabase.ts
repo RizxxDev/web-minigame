@@ -1,124 +1,90 @@
-import { useState, useEffect } from 'react';
-import { supabase, type UserInventory, type Item } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import { createClient } from '@supabase/supabase-js';
 
-export function useInventory() {
-  const [inventory, setInventory] = useState<UserInventory[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  useEffect(() => {
-    if (user) {
-      loadInventory();
-    }
-  }, [user]);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const loadInventory = async () => {
-    if (!user) return;
+export type Profile = {
+  id: string;
+  username: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+};
 
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_inventory')
-        .select(`
-          *,
-          items (*)
-        `)
-        .eq('user_id', user.id)
-        .order('obtained_at', { ascending: false });
+export type GameProgress = {
+  id: string;
+  user_id: string;
+  score: number;
+  clicks: number;
+  click_power: number;
+  auto_clickers: number;
+  auto_click_power: number;
+  coins: number;
+  gems: number;
+  total_spent: number;
+  created_at: string;
+  updated_at: string;
+};
 
-      if (error) {
-        console.error('Error loading inventory:', error);
-        toast.error('Failed to load inventory');
-        return;
-      }
+export type UserSettings = {
+  id: string;
+  user_id: string;
+  theme: 'light' | 'dark';
+  updated_at: string;
+};
 
-      setInventory(data as UserInventory[]);
-    } catch (error) {
-      console.error('Error loading inventory:', error);
-      toast.error('Failed to load inventory');
-    } finally {
-      setLoading(false);
-    }
-  };
+export type LeaderboardEntry = GameProgress & {
+  profiles: Pick<Profile, 'username'>;
+};
 
-  const equipItem = async (inventoryId: string, isEquipped: boolean) => {
-    if (!user) return false;
+export type Item = {
+  id: string;
+  name: string;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  effect_type: 'click_power' | 'auto_power' | 'coin_multiplier' | null;
+  effect_value: number;
+  image_url: string;
+  created_at: string;
+};
 
-    try {
-      const { error } = await supabase
-        .from('user_inventory')
-        .update({ is_equipped: isEquipped })
-        .eq('id', inventoryId)
-        .eq('user_id', user.id);
+export type UserInventory = {
+  id: string;
+  user_id: string;
+  item_id: string;
+  quantity: number;
+  is_equipped: boolean;
+  obtained_at: string;
+  items: Item;
+};
 
-      if (error) {
-        console.error('Error equipping item:', error);
-        toast.error('Failed to equip item');
-        return false;
-      }
+export type Trade = {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  offered_item_id: string | null;
+  offered_quantity: number;
+  requested_item_id: string | null;
+  requested_quantity: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  message: string | null;
+  created_at: string;
+  updated_at: string;
+  sender: Pick<Profile, 'username'>;
+  receiver: Pick<Profile, 'username'>;
+  offered_item: Item | null;
+  requested_item: Item | null;
+};
 
-      // Update local state
-      setInventory(prev => 
-        prev.map(item => 
-          item.id === inventoryId 
-            ? { ...item, is_equipped: isEquipped }
-            : item
-        )
-      );
-
-      toast.success(isEquipped ? 'Item equipped!' : 'Item unequipped!');
-      return true;
-    } catch (error) {
-      console.error('Error equipping item:', error);
-      toast.error('Failed to equip item');
-      return false;
-    }
-  };
-
-  const addItemToInventory = async (itemId: string, quantity: number = 1) => {
-    if (!user) return false;
-
-    try {
-      // Check if item already exists in inventory
-      const existingItem = inventory.find(inv => inv.item_id === itemId);
-
-      if (existingItem) {
-        // Update quantity
-        const { error } = await supabase
-          .from('user_inventory')
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq('id', existingItem.id);
-
-        if (error) throw error;
-      } else {
-        // Add new item
-        const { error } = await supabase
-          .from('user_inventory')
-          .insert({
-            user_id: user.id,
-            item_id: itemId,
-            quantity,
-          });
-
-        if (error) throw error;
-      }
-
-      // Reload inventory
-      await loadInventory();
-      return true;
-    } catch (error) {
-      console.error('Error adding item to inventory:', error);
-      return false;
-    }
-  };
-
-  return {
-    inventory,
-    loading,
-    loadInventory,
-    equipItem,
-    addItemToInventory,
-  };
-}
+export type GachaHistory = {
+  id: string;
+  user_id: string;
+  tier: 'basic' | 'premium' | 'legendary';
+  cost_type: 'coins' | 'gems';
+  cost_amount: number;
+  item_received: string;
+  created_at: string;
+  items: Item;
+};
