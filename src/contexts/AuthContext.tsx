@@ -118,6 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             auto_clickers: 0,
             auto_click_power: 1,
             coins: 0,
+            gems: 10,
+            total_spent: 0,
           },
         ]);
 
