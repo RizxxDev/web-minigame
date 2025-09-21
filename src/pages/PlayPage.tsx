@@ -299,7 +299,7 @@ export default function PlayPage() {
                     
                     <motion.button
                       onClick={() => buyUpgrade(upgrade.id)}
-                      disabled={localProgress.clicks < upgrade.cost}
+                      disabled={localProgress.coins < upgrade.cost}
                       className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold rounded-lg disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed hover:from-green-600 hover:to-blue-600 transition-all"
                       whileHover={{ scale: localProgress.coins >= upgrade.cost ? 1.02 : 1 }}
                       whileTap={{ scale: localProgress.coins >= upgrade.cost ? 0.98 : 1 }}
@@ -325,5 +325,3 @@ export default function PlayPage() {
     </div>
   );
 }
-
-
