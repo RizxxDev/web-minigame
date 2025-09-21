@@ -1,38 +1,124 @@
-import { createClient } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
+import { supabase, type UserInventory, type Item } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export function useInventory() {
+  const [inventory, setInventory] = useState<UserInventory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  useEffect(() => {
+    if (user) {
+      loadInventory();
+    }
+  }, [user]);
 
-export type Profile = {
-  id: string;
-  username: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-};
+  const loadInventory = async () => {
+    if (!user) return;
 
-export type GameProgress = {
-  id: string;
-  user_id: string;
-  score: number;
-  clicks: number;
-  click_power: number;
-  auto_clickers: number;
-  auto_click_power: number;
-  coins: number;
-  created_at: string;
-  updated_at: string;
-};
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_inventory')
+        .select(`
+          *,
+          items (*)
+        `)
+        .eq('user_id', user.id)
+        .order('obtained_at', { ascending: false });
 
-export type UserSettings = {
-  id: string;
-  user_id: string;
-  theme: 'light' | 'dark';
-  updated_at: string;
-};
+      if (error) {
+        console.error('Error loading inventory:', error);
+        toast.error('Failed to load inventory');
+        return;
+      }
 
-export type LeaderboardEntry = GameProgress & {
-  profiles: Pick<Profile, 'username'>;
-};
+      setInventory(data as UserInventory[]);
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+      toast.error('Failed to load inventory');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const equipItem = async (inventoryId: string, isEquipped: boolean) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('user_inventory')
+        .update({ is_equipped: isEquipped })
+        .eq('id', inventoryId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error equipping item:', error);
+        toast.error('Failed to equip item');
+        return false;
+      }
+
+      // Update local state
+      setInventory(prev => 
+        prev.map(item => 
+          item.id === inventoryId 
+            ? { ...item, is_equipped: isEquipped }
+            : item
+        )
+      );
+
+      toast.success(isEquipped ? 'Item equipped!' : 'Item unequipped!');
+      return true;
+    } catch (error) {
+      console.error('Error equipping item:', error);
+      toast.error('Failed to equip item');
+      return false;
+    }
+  };
+
+  const addItemToInventory = async (itemId: string, quantity: number = 1) => {
+    if (!user) return false;
+
+    try {
+      // Check if item already exists in inventory
+      const existingItem = inventory.find(inv => inv.item_id === itemId);
+
+      if (existingItem) {
+        // Update quantity
+        const { error } = await supabase
+          .from('user_inventory')
+          .update({ quantity: existingItem.quantity + quantity })
+          .eq('id', existingItem.id);
+
+        if (error) throw error;
+      } else {
+        // Add new item
+        const { error } = await supabase
+          .from('user_inventory')
+          .insert({
+            user_id: user.id,
+            item_id: itemId,
+            quantity,
+          });
+
+        if (error) throw error;
+      }
+
+      // Reload inventory
+      await loadInventory();
+      return true;
+    } catch (error) {
+      console.error('Error adding item to inventory:', error);
+      return false;
+    }
+  };
+
+  return {
+    inventory,
+    loading,
+    loadInventory,
+    equipItem,
+    addItemToInventory,
+  };
+}
