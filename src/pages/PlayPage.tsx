@@ -102,7 +102,7 @@ export default function PlayPage() {
       name: 'Click Power',
       description: 'Increase your click power',
       icon: Target,
-      cost: Math.floor(100 * Math.pow(1.5, localProgress.click_power - 1)),
+      cost: Math.floor(50 * Math.pow(1.5, localProgress.click_power - 1)),
       current: localProgress.click_power,
     },
     {
@@ -110,7 +110,7 @@ export default function PlayPage() {
       name: 'Auto Clicker',
       description: 'Clicks automatically every second',
       icon: RotateCcw,
-      cost: Math.floor(500 * Math.pow(2, localProgress.auto_clickers)),
+      cost: Math.floor(200 * Math.pow(2, localProgress.auto_clickers)),
       current: localProgress.auto_clickers,
     },
     {
@@ -118,21 +118,22 @@ export default function PlayPage() {
       name: 'Auto Power',
       description: 'Increase auto-clicker power',
       icon: Zap,
-      cost: Math.floor(1000 * Math.pow(2.5, localProgress.auto_click_power - 1)),
+      cost: Math.floor(500 * Math.pow(2.5, localProgress.auto_click_power - 1)),
       current: localProgress.auto_click_power,
     },
   ];
 
   const buyUpgrade = (upgradeId: string) => {
     const upgrade = upgrades.find(u => u.id === upgradeId);
-    if (!upgrade || localProgress.clicks < upgrade.cost) {
+    if (!upgrade || localProgress.coins < upgrade.cost) {
       toast.error('Not enough coins!');
       return;
     }
 
     setLocalProgress(prev => {
       const newProgress = { ...prev };
-      newProgress.clicks -= upgrade.cost;
+      newProgress.coins -= upgrade.cost;
+      newProgress.total_spent += upgrade.cost;
 
       switch (upgradeId) {
         case 'click_power':

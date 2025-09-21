@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import GachaPage from './pages/GachaPage';
 import InventoryPage from './pages/InventoryPage';
 import TradePage from './pages/TradePage';
+import AdminPage from './pages/AdminPage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               <Route path="/gacha" element={<GachaPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/trade" element={<TradePage />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Routes>
             <Toaster
               position="bottom-right"

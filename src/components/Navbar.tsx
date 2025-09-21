@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Play, Trophy, User, Moon, Sun, LogOut, Sparkles, Package, ArrowRightLeft } from 'lucide-react';
+import { Home, Play, Trophy, User, Moon, Sun, LogOut, Sparkles, Package, ArrowRightLeft, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
 
 export default function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
@@ -23,6 +23,9 @@ export default function Navbar() {
 
   if (user) {
     navItems.push({ path: '/profile', icon: User, label: 'Profile' });
+    if (profile?.role === 'admin') {
+      navItems.push({ path: '/admin', icon: Shield, label: 'Admin' });
+    }
   }
 
   return (
