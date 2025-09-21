@@ -125,14 +125,14 @@ export default function PlayPage() {
 
   const buyUpgrade = (upgradeId: string) => {
     const upgrade = upgrades.find(u => u.id === upgradeId);
-    if (!upgrade || localProgress.coins < upgrade.cost) {
+    if (!upgrade || localProgress.clicks < upgrade.cost) {
       toast.error('Not enough coins!');
       return;
     }
 
     setLocalProgress(prev => {
       const newProgress = { ...prev };
-      newProgress.coins -= upgrade.cost;
+      newProgress.clicks -= upgrade.cost;
 
       switch (upgradeId) {
         case 'click_power':
@@ -298,7 +298,7 @@ export default function PlayPage() {
                     
                     <motion.button
                       onClick={() => buyUpgrade(upgrade.id)}
-                      disabled={localProgress.coins < upgrade.cost}
+                      disabled={localProgress.clicks < upgrade.cost}
                       className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold rounded-lg disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed hover:from-green-600 hover:to-blue-600 transition-all"
                       whileHover={{ scale: localProgress.coins >= upgrade.cost ? 1.02 : 1 }}
                       whileTap={{ scale: localProgress.coins >= upgrade.cost ? 0.98 : 1 }}
@@ -324,3 +324,4 @@ export default function PlayPage() {
     </div>
   );
 }
+
