@@ -88,9 +88,37 @@ export default function HomePage() {
         </motion.div>
 
         {/* Stats Section */}
+        <motion.div
+          className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-8 shadow-xl"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+              Join the Community
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              Thousands of players are already clicking their way to glory!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">1M+</div>
+              <div className="text-gray-600 dark:text-gray-400">Total Clicks</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">500+</div>
+              <div className="text-gray-600 dark:text-gray-400">Active Players</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-pink-600 dark:text-pink-400 mb-2">24/7</div>
+              <div className="text-gray-600 dark:text-gray-400">Online Fun</div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
-
 }
-
