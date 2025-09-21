@@ -16,6 +16,8 @@ export default function PlayPage() {
     auto_clickers: 0,
     auto_click_power: 1,
     coins: 0,
+    gems: 0,
+    total_spent: 0,
   });
   const [clickAnimations, setClickAnimations] = useState<{ id: number; x: number; y: number }[]>([]);
   const [animationCounter, setAnimationCounter] = useState(0);
@@ -31,6 +33,8 @@ export default function PlayPage() {
         auto_clickers: progress.auto_clickers,
         auto_click_power: progress.auto_click_power,
         coins: progress.coins,
+        gems: progress.gems,
+        total_spent: progress.total_spent,
       });
     }
   }, [progress]);
@@ -56,7 +60,7 @@ export default function PlayPage() {
     if (user && progress) {
       const interval = setInterval(() => {
         saveProgress(localProgress);
-      }, 250); // Save every 5 seconds
+      }, 5000); // Save every 5 seconds
 
       return () => clearInterval(interval);
     }
@@ -87,6 +91,8 @@ export default function PlayPage() {
       ...prev,
       score: prev.score + prev.click_power,
       clicks: prev.clicks + 1,
+      coins: prev.coins + Math.floor(prev.click_power / 5),
+      gems: prev.gems + (Math.random() < 0.01 ? 1 : 0), // 1% chance to get 1 gem
     }));
   }, [animationCounter, localProgress.click_power]);
 
@@ -119,14 +125,14 @@ export default function PlayPage() {
 
   const buyUpgrade = (upgradeId: string) => {
     const upgrade = upgrades.find(u => u.id === upgradeId);
-    if (!upgrade || localProgress.clicks < upgrade.cost) {
-      toast.error('Not enough clicks!');
+    if (!upgrade || localProgress.coins < upgrade.cost) {
+      toast.error('Not enough coins!');
       return;
     }
 
     setLocalProgress(prev => {
       const newProgress = { ...prev };
-      newProgress.clicks -= upgrade.cost;
+      newProgress.coins -= upgrade.cost;
 
       switch (upgradeId) {
         case 'click_power':
@@ -171,7 +177,7 @@ export default function PlayPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {localProgress.score.toLocaleString()}
@@ -183,6 +189,18 @@ export default function PlayPage() {
               {localProgress.clicks.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Clicks</div>
+          </div>
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {localProgress.coins.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Coins</div>
+          </div>
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {localProgress.gems.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Gems</div>
           </div>
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -280,7 +298,7 @@ export default function PlayPage() {
                     
                     <motion.button
                       onClick={() => buyUpgrade(upgrade.id)}
-                      disabled={localProgress.clicks < upgrade.cost}
+                      disabled={localProgress.coins < upgrade.cost}
                       className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold rounded-lg disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed hover:from-green-600 hover:to-blue-600 transition-all"
                       whileHover={{ scale: localProgress.coins >= upgrade.cost ? 1.02 : 1 }}
                       whileTap={{ scale: localProgress.coins >= upgrade.cost ? 0.98 : 1 }}
@@ -304,9 +322,5 @@ export default function PlayPage() {
         </div>
       </div>
     </div>
-
   );
-
 }
-
-
