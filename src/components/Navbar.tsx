@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Play, Trophy, User, Moon, Sun, LogOut } from 'lucide-react';
+import { Home, Play, Trophy, User, Moon, Sun, LogOut, Sparkles, Package, ArrowRightLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
@@ -16,6 +16,9 @@ export default function Navbar() {
     { path: '/', icon: Home, label: 'Home' },
     { path: '/play', icon: Play, label: 'Play' },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { path: '/gacha', icon: Sparkles, label: 'Gacha' },
+    { path: '/inventory', icon: Package, label: 'Inventory' },
+    { path: '/trade', icon: ArrowRightLeft, label: 'Trade' },
   ];
 
   if (user) {
