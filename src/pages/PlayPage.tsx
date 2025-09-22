@@ -60,7 +60,7 @@ export default function PlayPage() {
     if (user && progress) {
       const interval = setInterval(() => {
         saveProgress(localProgress);
-      }, 250); // Save every 5 seconds
+      }, 1000); // Save every 5 seconds
 
       return () => clearInterval(interval);
     }
