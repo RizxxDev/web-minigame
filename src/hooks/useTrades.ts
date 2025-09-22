@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, type Trade } from '../lib/supabase';
+import { supabase, type Trade, type TradeItem } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -27,8 +27,10 @@ export function useTrades() {
           *,
           sender:sender_id (username),
           receiver:receiver_id (username),
-          offered_item:offered_item_id (*),
-          requested_item:requested_item_id (*)
+          trade_items (
+            *,
+            items (*)
+          )
         `)
         .eq('receiver_id', user.id)
         .eq('status', 'pending')
@@ -47,8 +49,10 @@ export function useTrades() {
           *,
           sender:sender_id (username),
           receiver:receiver_id (username),
-          offered_item:offered_item_id (*),
-          requested_item:requested_item_id (*)
+          trade_items (
+            *,
+            items (*)
+          )
         `)
         .eq('sender_id', user.id)
         .order('created_at', { ascending: false });
@@ -68,10 +72,8 @@ export function useTrades() {
 
   const createTrade = async (
     receiverUsername: string,
-    offeredItemId: string | null,
-    offeredQuantity: number,
-    requestedItemId: string | null,
-    requestedQuantity: number,
+    offeredItems: { itemId: string; quantity: number }[],
+    requestedItems: { itemId: string; quantity: number }[],
     message?: string
   ) => {
     if (!user) return false;
@@ -95,22 +97,62 @@ export function useTrades() {
       }
 
       // Create trade
-      const { error } = await supabase
+      const { data: trade, error: tradeError } = await supabase
         .from('trades')
         .insert({
           sender_id: user.id,
           receiver_id: receiver.id,
-          offered_item_id: offeredItemId,
-          offered_quantity: offeredQuantity,
-          requested_item_id: requestedItemId,
-          requested_quantity: requestedQuantity,
           message,
-        });
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Error creating trade:', error);
+      if (tradeError || !trade) {
+        console.error('Error creating trade:', tradeError);
         toast.error('Failed to create trade');
         return false;
+      }
+
+      // Add offered items
+      if (offeredItems.length > 0) {
+        const { error: offeredError } = await supabase
+          .from('trade_items')
+          .insert(
+            offeredItems.map(item => ({
+              trade_id: trade.id,
+              user_id: user.id,
+              item_id: item.itemId,
+              quantity: item.quantity,
+              type: 'offer',
+            }))
+          );
+
+        if (offeredError) {
+          console.error('Error adding offered items:', offeredError);
+          toast.error('Failed to add offered items');
+          return false;
+        }
+      }
+
+      // Add requested items
+      if (requestedItems.length > 0) {
+        const { error: requestedError } = await supabase
+          .from('trade_items')
+          .insert(
+            requestedItems.map(item => ({
+              trade_id: trade.id,
+              user_id: receiver.id,
+              item_id: item.itemId,
+              quantity: item.quantity,
+              type: 'request',
+            }))
+          );
+
+        if (requestedError) {
+          console.error('Error adding requested items:', requestedError);
+          toast.error('Failed to add requested items');
+          return false;
+        }
       }
 
       toast.success('Trade request sent!');
@@ -141,7 +183,16 @@ export function useTrades() {
         return false;
       }
 
-      // Start transaction-like operations
+      // Use the enhanced transfer function
+      const { data: transferResult, error: transferError } = await supabase
+        .rpc('transfer_items_with_validation', { p_trade_id: tradeId });
+
+      if (transferError || !transferResult) {
+        console.error('Error transferring items:', transferError);
+        toast.error('Failed to transfer items - not enough inventory space');
+        return false;
+      }
+
       // Update trade status
       const { error: updateError } = await supabase
         .from('trades')
@@ -152,27 +203,6 @@ export function useTrades() {
         console.error('Error updating trade:', updateError);
         toast.error('Failed to accept trade');
         return false;
-      }
-
-      // Transfer items (simplified - in production, use database functions)
-      if (trade.offered_item_id) {
-        // Remove item from sender, add to receiver
-        await supabase.rpc('transfer_item', {
-          from_user: trade.sender_id,
-          to_user: trade.receiver_id,
-          item_id: trade.offered_item_id,
-          quantity: trade.offered_quantity,
-        });
-      }
-
-      if (trade.requested_item_id) {
-        // Remove item from receiver, add to sender
-        await supabase.rpc('transfer_item', {
-          from_user: trade.receiver_id,
-          to_user: trade.sender_id,
-          item_id: trade.requested_item_id,
-          quantity: trade.requested_quantity,
-        });
       }
 
       toast.success('Trade accepted!');

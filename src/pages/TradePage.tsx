@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRightLeft, Send, Check, X, User, Gift, Clock } from 'lucide-react';
+import { ArrowRightLeft, Send, Check, X, User, Gift, Clock, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInventory } from '../hooks/useInventory';
 import { useTrades } from '../hooks/useTrades';
@@ -14,10 +14,10 @@ export default function TradePage() {
   const [activeTab, setActiveTab] = useState<'create' | 'incoming' | 'outgoing'>('create');
   const [tradeForm, setTradeForm] = useState({
     receiverUsername: '',
-    offeredItemId: '',
-    requestedItemId: '',
     message: '',
   });
+  const [offeredItems, setOfferedItems] = useState<{ itemId: string; quantity: number }[]>([]);
+  const [requestedItems, setRequestedItems] = useState<{ itemId: string; quantity: number }[]>([]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -31,23 +31,58 @@ export default function TradePage() {
       return;
     }
 
+    if (offeredItems.length === 0 && requestedItems.length === 0) {
+      toast.error('Please add items to offer or request');
+      return;
+    }
+
     const success = await createTrade(
       tradeForm.receiverUsername,
-      tradeForm.offeredItemId || null,
-      1,
-      tradeForm.requestedItemId || null,
-      1,
+      offeredItems,
+      requestedItems,
       tradeForm.message || undefined
     );
 
     if (success) {
       setTradeForm({
         receiverUsername: '',
-        offeredItemId: '',
-        requestedItemId: '',
         message: '',
       });
+      setOfferedItems([]);
+      setRequestedItems([]);
     }
+  };
+
+  const addOfferedItem = (itemId: string) => {
+    const existingIndex = offeredItems.findIndex(item => item.itemId === itemId);
+    if (existingIndex >= 0) {
+      const item = inventory.find(inv => inv.item_id === itemId);
+      if (item && offeredItems[existingIndex].quantity < item.quantity) {
+        const newItems = [...offeredItems];
+        newItems[existingIndex].quantity += 1;
+        setOfferedItems(newItems);
+      }
+    } else {
+      setOfferedItems([...offeredItems, { itemId, quantity: 1 }]);
+    }
+  };
+
+  const removeOfferedItem = (itemId: string) => {
+    const existingIndex = offeredItems.findIndex(item => item.itemId === itemId);
+    if (existingIndex >= 0) {
+      const newItems = [...offeredItems];
+      if (newItems[existingIndex].quantity > 1) {
+        newItems[existingIndex].quantity -= 1;
+      } else {
+        newItems.splice(existingIndex, 1);
+      }
+      setOfferedItems(newItems);
+    }
+  };
+
+  const getOfferedQuantity = (itemId: string) => {
+    const item = offeredItems.find(item => item.itemId === itemId);
+    return item ? item.quantity : 0;
   };
 
   const getRarityColor = (rarity: string) => {
@@ -134,36 +169,96 @@ export default function TradePage() {
                   />
                 </div>
 
-                {/* Offered Item */}
+                {/* Offered Items */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Your Offer (Optional)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                    Items You Want to Offer
                   </label>
-                  <select
-                    value={tradeForm.offeredItemId}
-                    onChange={(e) => setTradeForm({ ...tradeForm, offeredItemId: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select an item to offer</option>
-                    {inventory.map((item) => (
-                      <option key={item.id} value={item.item_id}>
-                        {item.items.image_url} {item.items.name} ({item.items.rarity}) x{item.quantity}
-                      </option>
-                    ))}
-                  </select>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    {inventory.map((item) => {
+                      const offeredQty = getOfferedQuantity(item.item_id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={`border-2 rounded-lg p-3 transition-all ${
+                            offeredQty > 0 
+                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                              : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xl">{item.items.image_url}</span>
+                              <div>
+                                <div className="font-semibold text-sm">{item.items.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  Available: {item.quantity}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              {offeredQty > 0 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeOfferedItem(item.item_id)}
+                                    className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="font-bold text-green-600 min-w-[20px] text-center">
+                                    {offeredQty}
+                                  </span>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => addOfferedItem(item.item_id)}
+                                disabled={offeredQty >= item.quantity}
+                                className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {offeredItems.length > 0 && (
+                    <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
+                      <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                        Items to Offer:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {offeredItems.map((item) => {
+                          const inventoryItem = inventory.find(inv => inv.item_id === item.itemId);
+                          return (
+                            <span
+                              key={item.itemId}
+                              className="bg-green-200 dark:bg-green-800 px-2 py-1 rounded text-sm"
+                            >
+                              {inventoryItem?.items.image_url} {inventoryItem?.items.name} x{item.quantity}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Requested Item */}
+                {/* Requested Items - Simple text input for now */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    What You Want (Optional)
+                    What You Want (Optional - describe items)
                   </label>
                   <input
                     type="text"
-                    value={tradeForm.requestedItemId}
-                    onChange={(e) => setTradeForm({ ...tradeForm, requestedItemId: e.target.value })}
+                    placeholder="e.g., Golden Clicker, Magic Wand, any legendary item..."
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Describe what you want (optional)"
                   />
                 </div>
 
@@ -256,14 +351,23 @@ export default function TradePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                      {/* Offered Item */}
+                      {/* Offered Items */}
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">They Offer:</p>
-                        {trade.offered_item ? (
-                          <div className={`border-2 rounded-lg p-3 ${getRarityColor(trade.offered_item.rarity)}`}>
-                            <div className="text-2xl mb-1">{trade.offered_item.image_url}</div>
-                            <div className="font-semibold text-sm">{trade.offered_item.name}</div>
-                            <div className="text-xs opacity-75">{trade.offered_item.rarity}</div>
+                        {trade.trade_items?.filter(item => item.type === 'offer').length > 0 ? (
+                          <div className="space-y-2">
+                            {trade.trade_items
+                              .filter(item => item.type === 'offer')
+                              .map((tradeItem) => (
+                                <div
+                                  key={tradeItem.id}
+                                  className={`border-2 rounded-lg p-2 ${getRarityColor(tradeItem.items.rarity)}`}
+                                >
+                                  <div className="text-xl mb-1">{tradeItem.items.image_url}</div>
+                                  <div className="font-semibold text-xs">{tradeItem.items.name}</div>
+                                  <div className="text-xs opacity-75">x{tradeItem.quantity}</div>
+                                </div>
+                              ))}
                           </div>
                         ) : (
                           <div className="text-gray-500 italic">Nothing</div>
@@ -278,11 +382,20 @@ export default function TradePage() {
                       {/* Requested Item */}
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">They Want:</p>
-                        {trade.requested_item ? (
-                          <div className={`border-2 rounded-lg p-3 ${getRarityColor(trade.requested_item.rarity)}`}>
-                            <div className="text-2xl mb-1">{trade.requested_item.image_url}</div>
-                            <div className="font-semibold text-sm">{trade.requested_item.name}</div>
-                            <div className="text-xs opacity-75">{trade.requested_item.rarity}</div>
+                        {trade.trade_items?.filter(item => item.type === 'request').length > 0 ? (
+                          <div className="space-y-2">
+                            {trade.trade_items
+                              .filter(item => item.type === 'request')
+                              .map((tradeItem) => (
+                                <div
+                                  key={tradeItem.id}
+                                  className={`border-2 rounded-lg p-2 ${getRarityColor(tradeItem.items.rarity)}`}
+                                >
+                                  <div className="text-xl mb-1">{tradeItem.items.image_url}</div>
+                                  <div className="font-semibold text-xs">{tradeItem.items.name}</div>
+                                  <div className="text-xs opacity-75">x{tradeItem.quantity}</div>
+                                </div>
+                              ))}
                           </div>
                         ) : (
                           <div className="text-gray-500 italic">Anything</div>
@@ -351,14 +464,23 @@ export default function TradePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                      {/* Offered Item */}
+                      {/* Offered Items */}
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">You Offer:</p>
-                        {trade.offered_item ? (
-                          <div className={`border-2 rounded-lg p-3 ${getRarityColor(trade.offered_item.rarity)}`}>
-                            <div className="text-2xl mb-1">{trade.offered_item.image_url}</div>
-                            <div className="font-semibold text-sm">{trade.offered_item.name}</div>
-                            <div className="text-xs opacity-75">{trade.offered_item.rarity}</div>
+                        {trade.trade_items?.filter(item => item.type === 'offer').length > 0 ? (
+                          <div className="space-y-2">
+                            {trade.trade_items
+                              .filter(item => item.type === 'offer')
+                              .map((tradeItem) => (
+                                <div
+                                  key={tradeItem.id}
+                                  className={`border-2 rounded-lg p-2 ${getRarityColor(tradeItem.items.rarity)}`}
+                                >
+                                  <div className="text-xl mb-1">{tradeItem.items.image_url}</div>
+                                  <div className="font-semibold text-xs">{tradeItem.items.name}</div>
+                                  <div className="text-xs opacity-75">x{tradeItem.quantity}</div>
+                                </div>
+                              ))}
                           </div>
                         ) : (
                           <div className="text-gray-500 italic">Nothing</div>
@@ -373,11 +495,20 @@ export default function TradePage() {
                       {/* Requested Item */}
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">You Want:</p>
-                        {trade.requested_item ? (
-                          <div className={`border-2 rounded-lg p-3 ${getRarityColor(trade.requested_item.rarity)}`}>
-                            <div className="text-2xl mb-1">{trade.requested_item.image_url}</div>
-                            <div className="font-semibold text-sm">{trade.requested_item.name}</div>
-                            <div className="text-xs opacity-75">{trade.requested_item.rarity}</div>
+                        {trade.trade_items?.filter(item => item.type === 'request').length > 0 ? (
+                          <div className="space-y-2">
+                            {trade.trade_items
+                              .filter(item => item.type === 'request')
+                              .map((tradeItem) => (
+                                <div
+                                  key={tradeItem.id}
+                                  className={`border-2 rounded-lg p-2 ${getRarityColor(tradeItem.items.rarity)}`}
+                                >
+                                  <div className="text-xl mb-1">{tradeItem.items.image_url}</div>
+                                  <div className="font-semibold text-xs">{tradeItem.items.name}</div>
+                                  <div className="text-xs opacity-75">x{tradeItem.quantity}</div>
+                                </div>
+                              ))}
                           </div>
                         ) : (
                           <div className="text-gray-500 italic">Anything</div>

@@ -25,6 +25,8 @@ export type GameProgress = {
   coins: number;
   gems: number;
   total_spent: number;
+  max_inventory: number;
+  max_equip: number;
   created_at: string;
   updated_at: string;
 };
@@ -48,6 +50,9 @@ export type Item = {
   effect_type: 'click_power' | 'auto_power' | 'coin_multiplier' | null;
   effect_value: number;
   image_url: string;
+  drop_rate_basic: number;
+  drop_rate_premium: number;
+  drop_rate_legendary: number;
   created_at: string;
 };
 
@@ -65,18 +70,34 @@ export type Trade = {
   id: string;
   sender_id: string;
   receiver_id: string;
-  offered_item_id: string | null;
-  offered_quantity: number;
-  requested_item_id: string | null;
-  requested_quantity: number;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   message: string | null;
   created_at: string;
   updated_at: string;
   sender: Pick<Profile, 'username'>;
   receiver: Pick<Profile, 'username'>;
-  offered_item: Item | null;
-  requested_item: Item | null;
+  trade_items: TradeItem[];
+};
+
+export type TradeItem = {
+  id: string;
+  trade_id: string;
+  user_id: string;
+  item_id: string;
+  quantity: number;
+  type: 'offer' | 'request';
+  created_at: string;
+  items: Item;
+};
+
+export type CurrencyTransaction = {
+  id: string;
+  user_id: string;
+  currency: 'coins' | 'gems';
+  amount: number;
+  reason: string;
+  reference_id: string | null;
+  created_at: string;
 };
 
 export type GachaHistory = {

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Zap, Target, Coins, CheckCircle, Circle } from 'lucide-react';
+import { Package, Zap, Target, Coins, CheckCircle, Circle, ArrowUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInventory } from '../hooks/useInventory';
+import { useGameProgress } from '../hooks/useGameProgress';
 import { Navigate } from 'react-router-dom';
 
 export default function InventoryPage() {
   const { user } = useAuth();
-  const { inventory, loading, equipItem } = useInventory();
+  const { inventory, loading, equipItem, upgradeInventorySlot, getInventorySlotCost } = useInventory();
+  const { progress } = useGameProgress();
   const [filter, setFilter] = useState<'all' | 'equipped' | 'common' | 'rare' | 'epic' | 'legendary'>('all');
 
   if (!user) {
@@ -71,7 +73,38 @@ export default function InventoryPage() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             Manage your collected items and equipment
           </p>
+          
+          {/* Inventory Stats */}
+          <div className="flex justify-center space-x-6 mt-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {inventory.reduce((sum, item) => sum + item.quantity, 0)} / {progress?.max_inventory || 20}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Items</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {inventory.filter(item => item.is_equipped).length} / {progress?.max_equip || 3}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Equipped</div>
+            </div>
+          </div>
         </motion.div>
+
+        {/* Upgrade Buttons */}
+        <div className="flex justify-center space-x-4 mb-8">
+          <motion.button
+            onClick={upgradeInventorySlot}
+            disabled={!progress || progress.coins < getInventorySlotCost()}
+            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+            whileHover={{ scale: progress && progress.coins >= getInventorySlotCost() ? 1.05 : 1 }}
+            whileTap={{ scale: progress && progress.coins >= getInventorySlotCost() ? 0.95 : 1 }}
+          >
+            <ArrowUp className="w-4 h-4" />
+            <Package className="w-4 h-4" />
+            <span>Upgrade Slots ({getInventorySlotCost().toLocaleString()} coins)</span>
+          </motion.button>
+        </div>
 
         {/* Filters */}
         <div className="flex flex-wrap justify-center gap-2 mb-8">
