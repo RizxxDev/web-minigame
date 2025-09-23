@@ -3,8 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import Navbar from './components/Navbar';
-import ParticleBackground from './components/ParticleBackground';
+import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import PlayPage from './pages/PlayPage';
@@ -15,15 +14,18 @@ import InventoryPage from './pages/InventoryPage';
 import TradePage from './pages/TradePage';
 import AdminPage from './pages/AdminPage';
 import UpgradePage from './pages/UpgradePage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminItemsPage from './pages/admin/AdminItemsPage';
+import AdminTradesPage from './pages/admin/AdminTradesPage';
+import AdminEconomyPage from './pages/admin/AdminEconomyPage';
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 
 function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
         <Router>
-          <div className="min-h-screen relative">
-            <ParticleBackground />
-            <Navbar />
+          <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -34,6 +36,11 @@ function App() {
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/trade" element={<TradePage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/items" element={<AdminItemsPage />} />
+              <Route path="/admin/trades" element={<AdminTradesPage />} />
+              <Route path="/admin/economy" element={<AdminEconomyPage />} />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
               <Route path="/upgrade" element={<UpgradePage />} />
             </Routes>
             <Toaster
@@ -47,7 +54,7 @@ function App() {
                 },
               }}
             />
-          </div>
+          </Layout>
         </Router>
       </ThemeProvider>
     </AuthProvider>
