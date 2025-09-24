@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function UpgradePage() {
   const { user } = useAuth();
-  const { progress, saveProgress } = useGameProgress();
+  const { progress, saveProgress, loadProgress } = useGameProgress();
   const { upgradeInventorySlot, getInventorySlotCost } = useInventory();
 
   if (!user) {
