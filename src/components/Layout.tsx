@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ParticleBackground from './ParticleBackground';
+import { Analytics } from '@vercel/analytics/next';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export default function Layout({ children }: LayoutProps) {
           <Sidebar />
           <main className="flex-1 relative z-10">
             {children}
+            <Analytics />
           </main>
         </div>
       ) : (
