@@ -110,3 +110,31 @@ export type GachaHistory = {
   created_at: string;
   items: Item;
 };
+
+export type Settings = {
+  key: string;
+  value: string;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+export type Announcement = {
+  id: string;
+  title: string;
+  message: string;
+  is_active: boolean;
+  created_at: string;
+  created_by: string;
+  profiles: Pick<Profile, 'username'>;
+};
+
+export type ChatMessage = {
+  id: string;
+  sender_id: string;
+  receiver_id: string | null;
+  message: string;
+  type: 'global' | 'private';
+  created_at: string;
+  sender: Pick<Profile, 'username'>;
+  receiver?: Pick<Profile, 'username'>;
+};

@@ -14,7 +14,13 @@ import {
   Menu,
   X,
   Shield,
-  Coins
+  Coins,
+  MessageCircle,
+  MessageSquare,
+  Megaphone,
+  Wrench,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,8 +30,17 @@ export default function Sidebar() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['chat']);
 
   const isActive = (path: string) => location.pathname === path;
+  
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuId) 
+        ? prev.filter(id => id !== menuId)
+        : [...prev, menuId]
+    );
+  };
 
   const playerMenuItems = [
     { path: '/play', icon: Home, label: 'Home', description: 'Main clicker game' },
@@ -35,6 +50,12 @@ export default function Sidebar() {
     { path: '/upgrade', icon: TrendingUp, label: 'Upgrade', description: 'Upgrade slots' },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', description: 'Top players' },
     { path: '/profile', icon: User, label: 'Profile', description: 'Your profile' },
+    { path: '/announcements', icon: Megaphone, label: 'Announcements', description: 'Game news' },
+  ];
+  
+  const chatMenuItems = [
+    { path: '/chat/global', icon: MessageCircle, label: 'Global Chat', description: 'Chat with everyone' },
+    { path: '/chat/private', icon: MessageSquare, label: 'Private Chat', description: 'Direct messages' },
   ];
 
   const adminMenuItems = [
@@ -43,6 +64,8 @@ export default function Sidebar() {
     { path: '/admin/trades', icon: ArrowRightLeft, label: 'Trade Management', description: 'Monitor trades' },
     { path: '/admin/economy', icon: Settings, label: 'Economy Settings', description: 'Game settings' },
     { path: '/admin/analytics', icon: BarChart3, label: 'Currency Chart', description: 'Economy analytics' },
+    { path: '/admin/announcements', icon: Megaphone, label: 'Announcements', description: 'Manage announcements' },
+    { path: '/admin/maintenance', icon: Wrench, label: 'Maintenance', description: 'System maintenance' },
   ];
 
   const allMenuItems = profile?.role === 'admin' 
@@ -142,6 +165,75 @@ export default function Sidebar() {
               )}
             </Link>
           ))}
+        </div>
+
+        {/* Chat Section */}
+        <div className="mb-6">
+          {!isCollapsed && (
+            <div className="mb-3">
+              <button
+                onClick={() => toggleMenu('chat')}
+                className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
+              >
+                <span>Chat</span>
+                {expandedMenus.includes('chat') ? (
+                  <ChevronDown className="w-3 h-3" />
+                ) : (
+                  <ChevronRight className="w-3 h-3" />
+                )}
+              </button>
+            </div>
+          )}
+          
+          <AnimatePresence>
+            {(isCollapsed || expandedMenus.includes('chat')) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {chatMenuItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`group flex items-center px-3 py-3 rounded-xl transition-all duration-200 relative ${
+                      isActive(item.path)
+                        ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                    }`}
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    {/* Active indicator */}
+                    {isActive(item.path) && (
+                      <motion.div
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full"
+                        layoutId="activeIndicatorChat"
+                        initial={false}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    
+                    <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0`} />
+                    
+                    {!isCollapsed && (
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">{item.label}</div>
+                        <div className="text-xs opacity-75 truncate">{item.description}</div>
+                      </div>
+                    )}
+
+                    {/* Tooltip for collapsed state */}
+                    {isCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                        {item.label}
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Admin Section */}
