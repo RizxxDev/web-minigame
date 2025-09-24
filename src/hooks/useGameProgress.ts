@@ -46,6 +46,7 @@ export function useGameProgress() {
               auto_clickers: 0,
               auto_click_power: 1,
               coins: 0,
+              gems: 0,
             },
           ])
           .select()
@@ -134,3 +135,4 @@ export function useGameProgress() {
     loadProgress,
   };
 }
+
