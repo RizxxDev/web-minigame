@@ -31,8 +31,8 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <MaintenanceProvider>
-          <Router>
+        <Router>
+          <MaintenanceProvider>
             <Layout>
               <Routes>
                 <Route path="/" element={<HomePage />} />
@@ -69,8 +69,8 @@ function App() {
                 }}
               />
             </Layout>
-          </Router>
-        </MaintenanceProvider>
+          </MaintenanceProvider>
+        </Router>
       </ThemeProvider>
     </AuthProvider>
   );
