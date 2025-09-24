@@ -12,22 +12,6 @@ export default function UpgradePage() {
   const { progress, saveProgress } = useGameProgress();
   const { upgradeInventorySlot, getInventorySlotCost } = useInventory();
 
-  // Update local progress when database progress loads
-  useEffect(() => {
-    if (progress) {
-      setLocalProgress({
-        score: progress.score,
-        clicks: progress.clicks,
-        click_power: progress.click_power,
-        auto_clickers: progress.auto_clickers,
-        auto_click_power: progress.auto_click_power,
-        coins: progress.coins,
-        gems: progress.gems,
-        total_spent: progress.total_spent,
-      });
-    }
-  }, [progress]);
-
   if (!user) {
     return <Navigate to="/login" replace />;
   }
