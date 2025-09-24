@@ -40,13 +40,11 @@ export default function UpgradePage() {
       const updatedProgress = {
         ...progress,
         coins: progress.coins - cost,
-        gems: progress.gems - cost,
         max_equip: progress.max_equip + 1,
       };
 
       await saveProgress(updatedProgress);
       toast.success('Equipment slot upgraded!');
-      await reloadProgress(); // Reload progress after upgrade
     } catch (error) {
       console.error('Error upgrading equipment:', error);
       toast.error('Failed to upgrade equipment slot');
@@ -83,10 +81,6 @@ export default function UpgradePage() {
     },
   ];
 
-  useEffect(() => {
-    // Reload progress initially to ensure the page is up-to-date
-    reloadProgress();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 relative z-10">

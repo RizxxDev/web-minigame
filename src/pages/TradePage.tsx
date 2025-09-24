@@ -18,11 +18,29 @@ export default function TradePage() {
   });
   const [offeredItems, setOfferedItems] = useState<{ itemId: string; quantity: number }[]>([]);
   const [requestedItems, setRequestedItems] = useState<{ itemId: string; quantity: number }[]>([]);
+  const [availableItems, setAvailableItems] = useState<{ id: string; name: string; image_url: string; rarity: string }[]>([]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
+  useEffect(() => {
+    loadAvailableItems();
+  }, []);
+
+  const loadAvailableItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select('id, name, image_url, rarity')
+        .order('name');
+
+      if (error) throw error;
+      setAvailableItems(data || []);
+    } catch (error) {
+      console.error('Error loading items:', error);
+    }
+  };
   const handleCreateTrade = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -80,11 +98,38 @@ export default function TradePage() {
     }
   };
 
+  const addRequestedItem = (itemId: string) => {
+    const existingIndex = requestedItems.findIndex(item => item.itemId === itemId);
+    if (existingIndex >= 0) {
+      const newItems = [...requestedItems];
+      newItems[existingIndex].quantity += 1;
+      setRequestedItems(newItems);
+    } else {
+      setRequestedItems([...requestedItems, { itemId, quantity: 1 }]);
+    }
+  };
+
+  const removeRequestedItem = (itemId: string) => {
+    const existingIndex = requestedItems.findIndex(item => item.itemId === itemId);
+    if (existingIndex >= 0) {
+      const newItems = [...requestedItems];
+      if (newItems[existingIndex].quantity > 1) {
+        newItems[existingIndex].quantity -= 1;
+      } else {
+        newItems.splice(existingIndex, 1);
+      }
+      setRequestedItems(newItems);
+    }
+  };
   const getOfferedQuantity = (itemId: string) => {
     const item = offeredItems.find(item => item.itemId === itemId);
     return item ? item.quantity : 0;
   };
 
+  const getRequestedQuantity = (itemId: string) => {
+    const item = requestedItems.find(item => item.itemId === itemId);
+    return item ? item.quantity : 0;
+  };
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'common': return 'text-gray-600 border-gray-300';
@@ -251,15 +296,84 @@ export default function TradePage() {
                 </div>
 
                 {/* Requested Items - Simple text input for now */}
+                {/* Requested Items */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    What You Want (Optional - describe items)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                    Items You Want to Request
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Golden Clicker, Magic Wand, any legendary item..."
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    {availableItems.map((item) => {
+                      const requestedQty = getRequestedQuantity(item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={`border-2 rounded-lg p-3 transition-all ${
+                            requestedQty > 0 
+                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                              : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xl">{item.image_url}</span>
+                              <div>
+                                <div className="font-semibold text-sm">{item.name}</div>
+                                <div className={`text-xs ${getRarityColor(item.rarity).split(' ')[0]}`}>
+                                  {item.rarity}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              {requestedQty > 0 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRequestedItem(item.id)}
+                                    className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="font-bold text-purple-600 min-w-[20px] text-center">
+                                    {requestedQty}
+                                  </span>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => addRequestedItem(item.id)}
+                                className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-purple-600"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {requestedItems.length > 0 && (
+                    <div className="bg-purple-100 dark:bg-purple-900/30 rounded-lg p-3">
+                      <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                        Items to Request:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {requestedItems.map((item) => {
+                          const availableItem = availableItems.find(av => av.id === item.itemId);
+                          return (
+                            <span
+                              key={item.itemId}
+                              className="bg-purple-200 dark:bg-purple-800 px-2 py-1 rounded text-sm"
+                            >
+                              {availableItem?.image_url} {availableItem?.name} x{item.quantity}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Message */}

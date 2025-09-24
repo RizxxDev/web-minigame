@@ -112,6 +112,19 @@ export default function PrivateChatPage() {
       return;
     }
 
+    // Optimistically add message to local state
+    const tempMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      sender_id: user.id,
+      receiver_id: selectedUser.id,
+      message: newMessage.trim(),
+      type: 'private',
+      created_at: new Date().toISOString(),
+      sender: { username: profile?.username || 'You' }
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage('');
     setSending(true);
     try {
       const { error } = await supabase
@@ -124,10 +137,12 @@ export default function PrivateChatPage() {
         });
 
       if (error) throw error;
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+      // Remove the optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setNewMessage(tempMessage.message);
     } finally {
       setSending(false);
     }
