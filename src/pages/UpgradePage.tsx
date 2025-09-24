@@ -107,7 +107,7 @@ export default function UpgradePage() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Coins className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {progress?.coins.toLocaleString() || 0}
+              {localProgress.coins.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Coins</div>
           </div>
