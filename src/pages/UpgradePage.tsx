@@ -120,7 +120,7 @@ export default function UpgradePage() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Package className="w-8 h-8 text-blue-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {progress.gems.toLocaleString() || 0}
+              {progress?.gems?.toLocaleString() || 0}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Gems</div>
           </div>
