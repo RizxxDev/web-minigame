@@ -139,14 +139,7 @@ export function useInventory() {
     }
 
     try {
-      const updatedProgress = {
-        ...progress,
-        coins: progress.coins - cost,
-        max_inventory: progress.max_inventory + 1,
-        total_spent: progress.total_spent + cost,
-      };
-
-      await saveProgress(updatedProgress);
+      // Just return success - the calling component handles the state update
       toast.success('Inventory slot upgraded!');
       return true;
     } catch (error) {

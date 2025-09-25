@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGameProgress } from '../hooks/useGameProgress';
 import { useGacha, type GachaTier, type GachaResult } from '../hooks/useGacha';
 import { Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function GachaPage() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function GachaPage() {
   const [localProgress, setLocalProgress] = useState({
     coins: 0,
     gems: 0,
+    total_spent: 0,
   });
 
   // Update local progress when database progress loads
@@ -23,18 +25,24 @@ export default function GachaPage() {
       setLocalProgress({
         coins: progress.coins,
         gems: progress.gems,
+        total_spent: progress.total_spent,
       });
     }
   }, [progress]);
 
   // Save progress to database after changes
   useEffect(() => {
-    if (user && progress && (localProgress.coins !== progress.coins || localProgress.gems !== progress.gems)) {
+    if (user && progress && (
+      localProgress.coins !== progress.coins || 
+      localProgress.gems !== progress.gems ||
+      localProgress.total_spent !== progress.total_spent
+    )) {
       const timeoutId = setTimeout(() => {
         saveProgress({
           ...progress,
           coins: localProgress.coins,
           gems: localProgress.gems,
+          total_spent: localProgress.total_spent,
         });
       }, 1000);
 
@@ -63,26 +71,19 @@ export default function GachaPage() {
     setLocalProgress(prev => ({
       ...prev,
       [cost.type]: prev[cost.type] - cost.amount,
+      total_spent: prev.total_spent + cost.amount,
     }));
 
     const result = await pullGacha(tier);
-    if (result && progress) {
+    if (result) {
       setGachaResult(result);
       setShowResult(true);
-      
-      // Update progress with new values after successful gacha
-      const newProgress = {
-        ...progress,
-        [cost.type]: progress[cost.type] - cost.amount,
-        total_spent: progress.total_spent + cost.amount,
-      };
-      
-      await saveProgress(newProgress);
     } else {
       // Revert local state if gacha failed
       setLocalProgress(prev => ({
         ...prev,
         [cost.type]: prev[cost.type] + cost.amount,
+        total_spent: prev.total_spent - cost.amount,
       }));
     }
   };

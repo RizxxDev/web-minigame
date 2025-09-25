@@ -13,37 +13,40 @@ export default function UpgradePage() {
   const { upgradeInventorySlot, getInventorySlotCost } = useInventory();
 
   const [localProgress, setLocalProgress] = useState({
-    score: 0,
-    clicks: 0,
-    click_power: 1,
-    auto_clickers: 0,
-    auto_click_power: 1,
     coins: 0,
     gems: 0,
-    total_spent: 0,
+    max_inventory: 20,
+    max_equip: 3,
   });
 
   // Update local progress when database progress loads
   useEffect(() => {
     if (progress) {
       setLocalProgress({
-        score: progress.score,
-        clicks: progress.clicks,
-        click_power: progress.click_power,
-        auto_clickers: progress.auto_clickers,
-        auto_click_power: progress.auto_click_power,
         coins: progress.coins,
         gems: progress.gems,
-        total_spent: progress.total_spent,
+        max_inventory: progress.max_inventory,
+        max_equip: progress.max_equip,
       });
     }
   }, [progress]);
 
   // Save progress to database periodically and after changes
   useEffect(() => {
-    if (user && progress && localProgress.coins !== progress.coins) {
+    if (user && progress && (
+      localProgress.coins !== progress.coins || 
+      localProgress.gems !== progress.gems ||
+      localProgress.max_inventory !== progress.max_inventory ||
+      localProgress.max_equip !== progress.max_equip
+    )) {
       const timeoutId = setTimeout(() => {
-        saveProgress(localProgress);
+        saveProgress({
+          ...progress,
+          coins: localProgress.coins,
+          gems: localProgress.gems,
+          max_inventory: localProgress.max_inventory,
+          max_equip: localProgress.max_equip,
+        });
       }, 1000); // Save 1 second after last change
 
       return () => clearTimeout(timeoutId);
@@ -54,41 +57,62 @@ export default function UpgradePage() {
     return <Navigate to="/login" replace />;
   }
 
-  const upgradeEquipSlot = async () => {
-    if (!progress) return;
+  const getEquipSlotCost = () => {
+    return Math.floor(200 * Math.pow(2, localProgress.max_equip - 3));
+  };
 
-    const cost = Math.floor(200 * Math.pow(2, progress.max_equip - 3));
+  const handleInventoryUpgrade = async () => {
+    const cost = getInventorySlotCost();
     
-    if (progress.coins < cost) {
+    if (localProgress.coins < cost) {
       toast.error('Not enough coins!');
       return;
     }
 
-    try {
-      const newProgress = {
-        ...progress,
-        coins: progress.coins - cost,
-        max_equip: progress.max_equip + 1,
-      };
+    // Update local state immediately (optimistic update)
+    setLocalProgress(prev => ({
+      ...prev,
+      coins: prev.coins - cost,
+      max_inventory: prev.max_inventory + 1,
+    }));
 
-      // Update local state immediately
+    try {
+      const success = await upgradeInventorySlot();
+      if (!success) {
+        // Revert local state on failure
+        setLocalProgress(prev => ({
+          ...prev,
+          coins: prev.coins + cost,
+          max_inventory: prev.max_inventory - 1,
+        }));
+      }
+    } catch (error) {
+      console.error('Error upgrading inventory:', error);
+      // Revert local state on error
       setLocalProgress(prev => ({
         ...prev,
-        coins: prev.coins - cost,
+        coins: prev.coins + cost,
+        max_inventory: prev.max_inventory - 1,
       }));
-
-      // Save to database
-      await saveProgress(newProgress);
-      toast.success('Equipment slot upgraded!');
-    } catch (error) {
-      console.error('Error upgrading equipment:', error);
-      toast.error('Failed to upgrade equipment slot');
     }
   };
 
-  const getEquipSlotCost = () => {
-    if (!progress) return 0;
-    return Math.floor(200 * Math.pow(2, progress.max_equip - 3));
+  const handleEquipUpgrade = async () => {
+    const cost = getEquipSlotCost();
+    
+    if (localProgress.coins < cost) {
+      toast.error('Not enough coins!');
+      return;
+    }
+
+    // Update local state immediately (optimistic update)
+    setLocalProgress(prev => ({
+      ...prev,
+      coins: prev.coins - cost,
+      max_equip: prev.max_equip + 1,
+    }));
+
+    toast.success('Equipment slot upgraded!');
   };
 
   const upgrades = [
@@ -97,10 +121,10 @@ export default function UpgradePage() {
       name: 'Inventory Slots',
       description: 'Increase your maximum inventory capacity',
       icon: Package,
-      current: progress?.max_inventory || 20,
+      current: localProgress.max_inventory,
       cost: getInventorySlotCost(),
       currency: 'coins',
-      action: upgradeInventorySlot,
+      action: handleInventoryUpgrade,
       color: 'from-blue-500 to-cyan-500',
     },
     {
@@ -108,41 +132,10 @@ export default function UpgradePage() {
       name: 'Equipment Slots',
       description: 'Equip more items simultaneously',
       icon: Zap,
-      current: progress?.max_equip || 3,
+      current: localProgress.max_equip,
       cost: getEquipSlotCost(),
       currency: 'coins',
-      action: async () => {
-        const cost = getEquipSlotCost();
-        if (!progress || localProgress.coins < cost) {
-          toast.error('Not enough coins!');
-          return;
-        }
-
-        try {
-          // Update local state immediately
-          setLocalProgress(prev => ({
-            ...prev,
-            coins: prev.coins - cost,
-          }));
-
-          const newProgress = {
-            ...progress,
-            coins: progress.coins - cost,
-            max_equip: progress.max_equip + 1,
-          };
-
-          await saveProgress(newProgress);
-          toast.success('Equipment slot upgraded!');
-        } catch (error) {
-          console.error('Error upgrading equipment:', error);
-          toast.error('Failed to upgrade equipment slot');
-          // Revert local state on error
-          setLocalProgress(prev => ({
-            ...prev,
-            coins: prev.coins + cost,
-          }));
-        }
-      },
+      action: handleEquipUpgrade,
       color: 'from-purple-500 to-pink-500',
     },
   ];
@@ -242,10 +235,10 @@ export default function UpgradePage() {
               {/* Upgrade Button */}
               <motion.button
                 onClick={upgrade.action}
-                disabled={!progress || progress.coins < upgrade.cost}
+                disabled={localProgress.coins < upgrade.cost}
                 className={`w-full py-3 px-4 bg-gradient-to-r ${upgrade.color} text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl`}
-                whileHover={{ scale: progress && progress.coins >= upgrade.cost ? 1.02 : 1 }}
-                whileTap={{ scale: progress && progress.coins >= upgrade.cost ? 0.98 : 1 }}
+                whileHover={{ scale: localProgress.coins >= upgrade.cost ? 1.02 : 1 }}
+                whileTap={{ scale: localProgress.coins >= upgrade.cost ? 0.98 : 1 }}
               >
                 <div className="flex items-center justify-center space-x-2">
                   <ArrowUp className="w-4 h-4" />
@@ -254,9 +247,9 @@ export default function UpgradePage() {
                 </div>
               </motion.button>
 
-              {progress && progress.coins < upgrade.cost && (
+              {localProgress.coins < upgrade.cost && (
                 <p className="text-red-500 text-xs text-center mt-2">
-                  Need {(upgrade.cost - progress.coins).toLocaleString()} more coins!
+                  Need {(upgrade.cost - localProgress.coins).toLocaleString()} more coins!
                 </p>
               )}
             </motion.div>
