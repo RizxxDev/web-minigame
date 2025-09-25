@@ -91,21 +91,6 @@ export default function InventoryPage() {
           </div>
         </motion.div>
 
-        {/* Upgrade Buttons */}
-        <div className="flex justify-center space-x-4 mb-8">
-          <motion.button
-            onClick={upgradeInventorySlot}
-            disabled={!progress || progress.coins < getInventorySlotCost()}
-            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-            whileHover={{ scale: progress && progress.coins >= getInventorySlotCost() ? 1.05 : 1 }}
-            whileTap={{ scale: progress && progress.coins >= getInventorySlotCost() ? 0.95 : 1 }}
-          >
-            <ArrowUp className="w-4 h-4" />
-            <Package className="w-4 h-4" />
-            <span>Upgrade Slots ({getInventorySlotCost().toLocaleString()} coins)</span>
-          </motion.button>
-        </div>
-
         {/* Filters */}
         <div className="flex flex-wrap justify-center gap-2 mb-8">
           {['all', 'equipped', 'common', 'rare', 'epic', 'legendary'].map((filterOption) => (
