@@ -143,6 +143,7 @@ export function useInventory() {
         ...progress,
         coins: progress.coins - cost,
         max_inventory: progress.max_inventory + 1,
+        total_spent: progress.total_spent + cost,
       };
 
       await saveProgress(updatedProgress);

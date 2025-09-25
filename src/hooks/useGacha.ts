@@ -34,16 +34,6 @@ export function useGacha() {
     if (!user || !progress) return null;
 
     const cost = gachaCosts[tier];
-    
-    // Check if user has enough currency
-    if (cost.type === 'coins' && progress.coins < cost.amount) {
-      toast.error('Not enough coins!');
-      return null;
-    }
-    if (cost.type === 'gems' && progress.gems < cost.amount) {
-      toast.error('Not enough gems!');
-      return null;
-    }
 
     setLoading(true);
     try {
@@ -83,16 +73,6 @@ export function useGacha() {
       // Select random item from rarity
       const selectedItem = rarityItems[Math.floor(Math.random() * rarityItems.length)];
 
-      // Deduct cost
-      const updatedProgress = {
-        ...progress,
-        [cost.type]: progress[cost.type] - cost.amount,
-        total_spent: progress.total_spent + cost.amount,
-      };
-
-      // Save progress
-      await saveProgress(updatedProgress);
-
       // Add item to inventory
       const isNew = await addItemToInventory(selectedItem.id);
 
@@ -107,7 +87,7 @@ export function useGacha() {
           item_received: selectedItem.id,
         });
 
-      toast.success(`Got ${selectedItem.name}!`);
+      toast.success(`🎉 Got ${selectedItem.name}!`);
       
       return {
         item: selectedItem,

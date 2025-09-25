@@ -8,20 +8,82 @@ import { Navigate } from 'react-router-dom';
 
 export default function GachaPage() {
   const { user } = useAuth();
-  const { progress } = useGameProgress();
+  const { progress, saveProgress } = useGameProgress();
   const { pullGacha, loading, gachaCosts } = useGacha();
   const [gachaResult, setGachaResult] = useState<GachaResult | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [localProgress, setLocalProgress] = useState({
+    coins: 0,
+    gems: 0,
+  });
+
+  // Update local progress when database progress loads
+  useEffect(() => {
+    if (progress) {
+      setLocalProgress({
+        coins: progress.coins,
+        gems: progress.gems,
+      });
+    }
+  }, [progress]);
+
+  // Save progress to database after changes
+  useEffect(() => {
+    if (user && progress && (localProgress.coins !== progress.coins || localProgress.gems !== progress.gems)) {
+      const timeoutId = setTimeout(() => {
+        saveProgress({
+          ...progress,
+          coins: localProgress.coins,
+          gems: localProgress.gems,
+        });
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, progress, localProgress, saveProgress]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   const handleGachaPull = async (tier: GachaTier) => {
+    const cost = gachaCosts[tier];
+    
+    // Check if user has enough currency
+    if (cost.type === 'coins' && localProgress.coins < cost.amount) {
+      toast.error('Not enough coins!');
+      return;
+    }
+    if (cost.type === 'gems' && localProgress.gems < cost.amount) {
+      toast.error('Not enough gems!');
+      return;
+    }
+
+    // Update local state immediately (optimistic update)
+    setLocalProgress(prev => ({
+      ...prev,
+      [cost.type]: prev[cost.type] - cost.amount,
+    }));
+
     const result = await pullGacha(tier);
-    if (result) {
+    if (result && progress) {
       setGachaResult(result);
       setShowResult(true);
+      
+      // Update progress with new values after successful gacha
+      const newProgress = {
+        ...progress,
+        [cost.type]: progress[cost.type] - cost.amount,
+        total_spent: progress.total_spent + cost.amount,
+      };
+      
+      await saveProgress(newProgress);
+    } else {
+      // Revert local state if gacha failed
+      setLocalProgress(prev => ({
+        ...prev,
+        [cost.type]: prev[cost.type] + cost.amount,
+      }));
     }
   };
 
@@ -76,9 +138,9 @@ export default function GachaPage() {
   ];
 
   const canAfford = (tier: GachaTier) => {
-    if (!progress) return false;
+    if (!localProgress) return false;
     const cost = gachaCosts[tier];
-    return cost.type === 'coins' ? progress.coins >= cost.amount : progress.gems >= cost.amount;
+    return cost.type === 'coins' ? localProgress.coins >= cost.amount : localProgress.gems >= cost.amount;
   };
 
   return (
@@ -106,14 +168,14 @@ export default function GachaPage() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Coins className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {progress?.coins.toLocaleString() || 0}
+              {localProgress.coins.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Coins</div>
           </div>
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Gem className="w-8 h-8 text-blue-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {progress?.gems.toLocaleString() || 0}
+              {localProgress.gems.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Gems</div>
           </div>

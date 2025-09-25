@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function UpgradePage() {
   const { user } = useAuth();
-  const { progress, saveProgress, loadProgress } = useGameProgress();
+  const { progress, saveProgress } = useGameProgress();
   const { upgradeInventorySlot, getInventorySlotCost } = useInventory();
 
   const [localProgress, setLocalProgress] = useState({
@@ -39,19 +39,20 @@ export default function UpgradePage() {
     }
   }, [progress]);
 
+  // Save progress to database periodically and after changes
+  useEffect(() => {
+    if (user && progress && localProgress.coins !== progress.coins) {
+      const timeoutId = setTimeout(() => {
+        saveProgress(localProgress);
+      }, 1000); // Save 1 second after last change
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, progress, localProgress, saveProgress]);
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
-  // Refetch progress after upgrading
-  const reloadProgress = async () => {
-    try {
-      await loadProgress(); // This loads the updated progress
-    } catch (error) {
-      console.error('Error loading progress:', error);
-      toast.error('Failed to reload progress');
-    }
-  };
 
   const upgradeEquipSlot = async () => {
     if (!progress) return;
@@ -64,13 +65,20 @@ export default function UpgradePage() {
     }
 
     try {
-      const updatedProgress = {
+      const newProgress = {
         ...progress,
         coins: progress.coins - cost,
         max_equip: progress.max_equip + 1,
       };
 
-      await saveProgress(updatedProgress);
+      // Update local state immediately
+      setLocalProgress(prev => ({
+        ...prev,
+        coins: prev.coins - cost,
+      }));
+
+      // Save to database
+      await saveProgress(newProgress);
       toast.success('Equipment slot upgraded!');
     } catch (error) {
       console.error('Error upgrading equipment:', error);
@@ -103,7 +111,38 @@ export default function UpgradePage() {
       current: progress?.max_equip || 3,
       cost: getEquipSlotCost(),
       currency: 'coins',
-      action: upgradeEquipSlot,
+      action: async () => {
+        const cost = getEquipSlotCost();
+        if (!progress || localProgress.coins < cost) {
+          toast.error('Not enough coins!');
+          return;
+        }
+
+        try {
+          // Update local state immediately
+          setLocalProgress(prev => ({
+            ...prev,
+            coins: prev.coins - cost,
+          }));
+
+          const newProgress = {
+            ...progress,
+            coins: progress.coins - cost,
+            max_equip: progress.max_equip + 1,
+          };
+
+          await saveProgress(newProgress);
+          toast.success('Equipment slot upgraded!');
+        } catch (error) {
+          console.error('Error upgrading equipment:', error);
+          toast.error('Failed to upgrade equipment slot');
+          // Revert local state on error
+          setLocalProgress(prev => ({
+            ...prev,
+            coins: prev.coins + cost,
+          }));
+        }
+      },
       color: 'from-purple-500 to-pink-500',
     },
   ];
@@ -141,7 +180,7 @@ export default function UpgradePage() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Package className="w-8 h-8 text-blue-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {progress?.gems?.toLocaleString() || 0}
+              {localProgress.gems?.toLocaleString() || 0}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Gems</div>
           </div>
