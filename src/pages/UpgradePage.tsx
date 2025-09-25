@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Zap, Coins, ArrowUp, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,17 @@ export default function UpgradePage() {
   const { user } = useAuth();
   const { progress, saveProgress, loadProgress } = useGameProgress();
   const { upgradeInventorySlot, getInventorySlotCost } = useInventory();
+
+  const [localProgress, setLocalProgress] = useState({
+    score: 0,
+    clicks: 0,
+    click_power: 1,
+    auto_clickers: 0,
+    auto_click_power: 1,
+    coins: 0,
+    gems: 0,
+    total_spent: 0,
+  });
 
   // Update local progress when database progress loads
   useEffect(() => {
@@ -123,7 +134,7 @@ export default function UpgradePage() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 text-center">
             <Coins className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {localProgress.score.toLocaleString()}
+              {localProgress.coins.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Coins</div>
           </div>
