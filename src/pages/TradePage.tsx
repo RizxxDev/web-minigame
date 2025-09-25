@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRightLeft, Send, Check, X, User, Gift, Clock, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,6 +6,7 @@ import { useInventory } from '../hooks/useInventory';
 import { useTrades } from '../hooks/useTrades';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 export default function TradePage() {
   const { user } = useAuth();
