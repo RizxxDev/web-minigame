@@ -39,16 +39,6 @@ export default function UpgradePage() {
     }
   }, [progress]);
 
-  useEffect(() => {
-    if (user && progress) {
-      const interval = setInterval(() => {
-        saveProgress(localProgress); // Save every 1 second
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [user, progress, localProgress, saveProgress]);
-
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -93,78 +83,31 @@ export default function UpgradePage() {
     return Math.floor(200 * Math.pow(2, progress.max_equip - 3));
   };
 
-  // Upgrades for Click Power, Auto Clicker, Auto Power
   const upgrades = [
     {
-      id: 'click_power',
-      name: 'Click Power',
-      description: 'Increase your click power',
-      icon: Zap,
-      current: progress?.click_power || 1,
-      cost: Math.floor(50 * Math.pow(1.5, progress?.click_power - 1)),
-      currency: 'coins',
-      action: async () => {
-        if (progress.coins < upgrades[0].cost) {
-          toast.error('Not enough coins!');
-          return;
-        }
-
-        const updatedProgress = {
-          ...progress,
-          coins: progress.coins - upgrades[0].cost,
-          click_power: progress.click_power + 1,
-        };
-        await saveProgress(updatedProgress);
-        toast.success('Click Power upgraded!');
-      },
-    },
-    {
-      id: 'auto_clicker',
-      name: 'Auto Clicker',
-      description: 'Clicks automatically every second',
+      id: 'inventory',
+      name: 'Inventory Slots',
+      description: 'Increase your maximum inventory capacity',
       icon: Package,
-      current: progress?.auto_clickers || 0,
-      cost: Math.floor(200 * Math.pow(2, progress?.auto_clickers)),
+      current: progress?.max_inventory || 20,
+      cost: getInventorySlotCost(),
       currency: 'coins',
-      action: async () => {
-        if (progress.coins < upgrades[1].cost) {
-          toast.error('Not enough coins!');
-          return;
-        }
-
-        const updatedProgress = {
-          ...progress,
-          coins: progress.coins - upgrades[1].cost,
-          auto_clickers: progress.auto_clickers + 1,
-        };
-        await saveProgress(updatedProgress);
-        toast.success('Auto Clicker upgraded!');
-      },
+      action: upgradeInventorySlot,
+      color: 'from-blue-500 to-cyan-500',
     },
     {
-      id: 'auto_power',
-      name: 'Auto Power',
-      description: 'Increase auto-clicker power',
-      icon: Coins,
-      current: progress?.auto_click_power || 1,
-      cost: Math.floor(500 * Math.pow(2.5, progress?.auto_click_power - 1)),
+      id: 'equip',
+      name: 'Equipment Slots',
+      description: 'Equip more items simultaneously',
+      icon: Zap,
+      current: progress?.max_equip || 3,
+      cost: getEquipSlotCost(),
       currency: 'coins',
-      action: async () => {
-        if (progress.coins < upgrades[2].cost) {
-          toast.error('Not enough coins!');
-          return;
-        }
-
-        const updatedProgress = {
-          ...progress,
-          coins: progress.coins - upgrades[2].cost,
-          auto_click_power: progress.auto_click_power + 1,
-        };
-        await saveProgress(updatedProgress);
-        toast.success('Auto Power upgraded!');
-      },
+      action: upgradeEquipSlot,
+      color: 'from-purple-500 to-pink-500',
     },
   ];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 relative z-10">
@@ -236,10 +179,10 @@ export default function UpgradePage() {
                     {upgrade.current}
                   </span>
                 </div>
-
+                
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                   <div 
-                    className={`h-3 bg-gradient-to-r ${upgrade.color} rounded-full transition-all duration-500`} 
+                    className={`h-3 bg-gradient-to-r ${upgrade.color} rounded-full transition-all duration-500`}
                     style={{ width: `${Math.min((upgrade.current / (upgrade.current + 5)) * 100, 100)}%` }}
                   />
                 </div>
@@ -280,6 +223,33 @@ export default function UpgradePage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Tips */}
+        <motion.div
+          className="mt-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">
+            💡 Upgrade Tips
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-start space-x-2">
+              <Package className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong>Inventory Slots:</strong> More slots let you collect more items from gacha without worrying about space.
+              </div>
+            </div>
+            <div className="flex items-start space-x-2">
+              <Zap className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong>Equipment Slots:</strong> Equip more items simultaneously to stack their effects and boost your performance.
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
